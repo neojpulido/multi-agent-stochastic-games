@@ -1,0 +1,22 @@
+{
+    "experiment_name": "Stage2_Robert_Efficiency_Model",
+    "is_multi_agent": true,
+    "training_episode_budget": 20000,
+    "agent": {
+        "learning_rate_alpha": 0.1,
+        "discount_factor_gamma": 0.95,
+        "initial_epsilon": 1.0,
+        "epsilon_decay_rate": 0.9995,
+        "minimum_epsilon": 0.05,
+        "action_size": 9
+    },
+    "env": {
+        "grid_rows": 5,
+        "grid_cols": 5,
+        "p_flood": 0.4,
+        "step_cost": -0.5,
+        "hazard_penalty": 0.0,
+        "collision_penalty": -20.0,
+        "success_reward": 100.0
+    }
+}

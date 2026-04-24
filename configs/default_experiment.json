@@ -1,0 +1,22 @@
+{
+    "experiment_name": "Default_Balanced_Run",
+    "is_multi_agent": true,
+    "training_episode_budget": 15000,
+    "agent": {
+        "learning_rate_alpha": 0.1,
+        "discount_factor_gamma": 0.95,
+        "initial_epsilon": 1.0,
+        "epsilon_decay_rate": 0.9995,
+        "minimum_epsilon": 0.05,
+        "action_size": 9
+    },
+    "env": {
+        "grid_rows": 5,
+        "grid_cols": 5,
+        "p_flood": 0.2,
+        "step_cost": -1.0,
+        "hazard_penalty": -10.0,
+        "collision_penalty": -10.0,
+        "success_reward": 100.0
+    }
+}
