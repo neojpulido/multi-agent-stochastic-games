@@ -1,22 +1,20 @@
 {
-    "experiment_name": "Stage1_Transport_Baseline",
+    "experiment_name": "Assignment_1_Baseline",
     "is_multi_agent": false,
-    "training_episode_budget": 10000,
+    "training_episode_budget": 5000,
     "agent": {
         "learning_rate_alpha": 0.1,
         "discount_factor_gamma": 0.9,
         "initial_epsilon": 1.0,
         "epsilon_decay_rate": 0.999,
         "minimum_epsilon": 0.01,
-        "action_size": 8
+        "action_size": 9
     },
     "env": {
         "grid_rows": 5,
         "grid_cols": 5,
         "p_flood": 0.0,
         "step_cost": -1.0,
-        "hazard_penalty": 0.0,
-        "collision_penalty": 0.0,
         "success_reward": 100.0
     }
 }
