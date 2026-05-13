@@ -3,26 +3,23 @@ from typing import Tuple, List, Dict
 
 class Directions(IntEnum):
     """
-    Semantic enumeration of cardinal and ordinal directions.
-    Compatible with Stage 1 and Stage 2.
+    Semantic enumeration of cardinal directions and WAIT.
+    Specifically for Stage 2 Multi-Agent Stochastic Games.
     """
     NORTH = 0
     SOUTH = 1
     EAST = 2
     WEST = 3
     WAIT = 4
-    NORTH_EAST = 5
-    NORTH_WEST = 6
-    SOUTH_EAST = 7
-    SOUTH_WEST = 8
 
 class Actions:
     """
-    Handles coordinate geometry using (y, x) indexing.
+    Handles coordinate geometry using (y, x) indexing for the Stage 2 grid.
     - (0, 2) is North (Y)
     - (4, 2) is South (V)
     - (2, 0) is West (X)
     - (2, 4) is East (U)
+    - (2, 2) is the Lake
     """
     
     # Map Directions to (dy, dx)
@@ -32,10 +29,6 @@ class Actions:
         Directions.EAST: (0, 1),
         Directions.WEST: (0, -1),
         Directions.WAIT: (0, 0),
-        Directions.NORTH_EAST: (-1, 1),
-        Directions.NORTH_WEST: (-1, -1),
-        Directions.SOUTH_EAST: (1, 1),
-        Directions.SOUTH_WEST: (1, -1),
     }
 
     @staticmethod

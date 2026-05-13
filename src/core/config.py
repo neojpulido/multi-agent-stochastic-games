@@ -11,19 +11,19 @@ class AgentConfig:
     initial_epsilon: float
     epsilon_decay_rate: float
     minimum_epsilon: float
-    action_size: int  # 8 for Assignment 1, 9 (inc. WAIT) for Assignment 2
+    action_size: int  # 5 for Stage 2 (N, S, E, W, WAIT)
 
 
 @dataclass(frozen=True)
 class EnvConfig:
-    """Structural parameters and reward values for the GridWorld."""
+    """Structural parameters and reward values for the Rugged Planet MARL GridWorld."""
     grid_rows: int
     grid_cols: int
     p_flood: float  # Probability of lake flooding (Stochasticity)
     step_cost: float
     success_reward: float
-    collision_penalty: float = 0.0  # Relevant for Stage 2
-    hazard_penalty: float = 0.0  # Sarah's safety penalty
+    collision_penalty: float = 0.0
+    hazard_penalty: float = 0.0
 
 
 @dataclass(frozen=True)

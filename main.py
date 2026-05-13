@@ -2,7 +2,6 @@ import argparse
 import os
 from src.core.config import ExperimentConfig
 from src.domain.gridworld.stochastic import StochasticMultiAgentEnv
-from src.domain.gridworld.transport import GridWorldTransport
 from src.agents.tabular_qagent import TabularQAgent
 from src.orchestration.runner import SimulationRunner
 
@@ -22,13 +21,10 @@ def main():
 
     config = ExperimentConfig.from_json(args.config)
     
-    # 1. Initialize Environment based on config
-    if config.is_multi_agent:
-        env = StochasticMultiAgentEnv(config.env)
-        agent_ids = ["Agent_A", "Agent_B"]
-    else:
-        env = GridWorldTransport(config.env)
-        agent_ids = ["Agent_1"]
+    # 1. Initialize Environment
+    # We exclusively support the Stage 2 Stochastic Multi-Agent environment.
+    env = StochasticMultiAgentEnv(config.env)
+    agent_ids = ["Agent_A", "Agent_B"]
 
     # 2. Initialize Agents
     agents = {
