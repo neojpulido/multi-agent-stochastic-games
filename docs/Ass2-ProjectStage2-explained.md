@@ -56,6 +56,9 @@ for agent_id in ["Agent_A", "Agent_B"]:
 > 2.  **State-Driven Logistics:** Mission progress is tracked via a `has_sample` state variable. This enforces a strictly sequential task dependency: Search $\rightarrow$ Sampling $\rightarrow$ Return $\rightarrow$ Delivery.
 > 3.  **Incentive Alignment:** Agents are not given explicit goal coordinates; instead, the environment provides sparse positive reward signals (10 for sampling, 50 for delivery). The Q-learning algorithm must discover the landmark locations by maximizing these signals.
 > 4.  **Terminal Reward Coupling:** The 'delivery' reward is only accessible if the agent is in the 'return' state (`has_sample=True`), ensuring that agents learn to complete the entire transport cycle rather than just reaching the sampling site.
+> **References:** 
+> - `FIT5226_W06_GridWorld_v4.py` (Board architecture and piece positioning).
+> - `FIT5226_W06_Stage1_Solution.ipynb` (Sequential search and pickup state logic).
 
 **Math Explanation:**
 > The environment is a discrete grid $G = \{0, \dots, 4\} \times \{0, \dots, 4\}$. The shortest path distance between any two points $p_1, p_2 \in G$ is defined by the **Manhattan Distance**:
@@ -64,6 +67,8 @@ for agent_id in ["Agent_A", "Agent_B"]:
 > - Path A ($X \rightarrow U$): $\{(2, 0), (2, 1), (2, 2), (2, 3), (2, 4)\}$
 > - Path B ($Y \rightarrow V$): $\{(0, 2), (1, 2), (2, 2), (3, 2), (4, 2)\}$
 > - Intersection: $Path_A \cap Path_B = \{(2, 2)\}$
+> **References:**
+> - `FIT5226_W03_Seminar_2_MDPs_Bellman_Policy_And_Value_Iteration.pdf` (MDP grid world formulation, Slide 12).
 
 We don’t know much about the planet except (1) that the terrain is dangerous and movement is extremely difficult, so that it is important that all routes have to be kept as short as possible; (2) there is a mysterious playa lake (an ephemeral lake) at the point where the shortest connections between X and U and Y and V, respectively, intersect. This lake floods and dries out at surprisingly high speed (but this may not be so strange given that this is a very strange planet anyway). 
 
@@ -91,13 +96,16 @@ self.locs["Lake"] = (2, 2)
 > 1.  **Cost-Based Path Optimization:** The 'dangerous terrain' is modeled via a continuous negative reward signal (`step_cost`). This ensures that the RL objective (maximizing cumulative reward) is mathematically equivalent to minimizing the Manhattan distance between mission landmarks.
 > 2.  **Exogenous Stochasticity:** The lake's flooding behavior is implemented as a binary state machine that transitions independently of agent behavior. This introduces **State Non-Stationarity** from the agent's perspective, as the optimal action at the intersection $(2,2)$ depends on the stochastic `lake_flooded` signal.
 > 3.  **Conflict Geometry:** The lake is strategically placed at the intersection of the agents' orthogonal shortest paths. This forces the agents to solve an **Anti-Coordination Game** to avoid collisions while pursuing their primary mission objectives.
+> **References:**
+> - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Stochastic games / Markov games, Slide 5).
 
 **Math Explanation:**
 > 1.  **Expected Step Reward:** The RL agent seeks to maximize $G_t = \sum \gamma^k r_{t+k+1}$. With $r_{step} = -5$, any deviation from the geodesic path incurs a penalty of at least $-5$ per extra step.
 > 2.  **State Transition Kernel:** The lake state $s_{lake} \in \{0, 1\}$ evolves according to a Markov transition matrix $T$:
 > $$ T = \begin{pmatrix} 1-p & p \\ p & 1-p \end{pmatrix} $$
 > where $p$ is the transition probability. The global state transition is thus $P(s' | s, a) = P(s'_{agents} | s_{agents}, a) \cdot T(s'_{lake} | s_{lake})$.
-
+> **References:**
+> - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Transition probability matrices).
 
 As the head of the engineering department, you decide to build swarms of tiny robots, so that an almost continuous stream of robots can run between each ship and its target sampling location. 
 
@@ -131,6 +139,8 @@ if self.positions["Agent_A"] == self.positions["Agent_B"]:
 > 2.  **Full Waterproofing (Agent B):** `Agent_B` logic excludes the hazard check, allowing it to cross the flooded lake without environmental penalty.
 > 3.  **Environmental Signal:** The water sensor (lake state) acts as a **Correlating Device**. Because Agent A is forced to wait when the lake is flooded to avoid damage, Agent B can learn that the flooded state is a "safe window" to cross without risk of collision, as Agent A is statistically unlikely to be there.
 > 4.  **Collision Physics:** Regardless of waterproofing, both agents suffer a `collision_penalty` if they occupy the same coordinate. This reinforces the need for coordination even when environmental hazards are absent for one player.
+> **References:**
+> - `FIT5226_W07_Classical_Game _Theory.pdf` (Equilibrium selection via asymmetry, Slide 22).
 
 **Math Explanation:**
 > In Phase 1, the Reward Functions $R_A$ and $R_B$ are asymmetric at $s = (2,2)$:
@@ -148,6 +158,41 @@ Robert declares that your reinforcement learning should still be able to avoid c
 Robert cunningly argues that this should indeed be quite simple since, as he says, “using the lake like a traffic light is just a different equilibrium of the collective behaviour so they should learn this.” 
 
 Sarah warns you that this will be extremely difficult to achieve using q-learning and that she has serious doubts the project will succeed under these conditions.
+
+**Implementation Mapping:**
+```python
+# src/domain/gridworld/stochastic.py
+
+# 1. Symmetric Reward Structure (Phase 2)
+# hazard_penalty is configured to 0.0 for all agents
+if self.lake_flooded and self.positions["Agent_A"] == self.locs["Lake"]:
+    rewards["Agent_A"] += 0.0 # No more environmental deterrent
+
+# 2. Permanent Multi-Agent Conflict
+if self.positions["Agent_A"] == self.positions["Agent_B"]:
+    rewards["Agent_A"] += self.config.collision_penalty
+    rewards["Agent_B"] += self.config.collision_penalty
+```
+
+**Technical Explanation:**
+> Phase 2 transforms the environment into a **Symmetric Multi-Agent System**. By removing the `hazard_penalty` for Agent A, the environment loses its inherent **Asymmetry**, which previously acted as an implicit coordination signal.
+> 1.  **Symmetry Trap:** Both agents now perceive the lake as a neutral cell but share a catastrophic collision risk. This creates a pure **Anti-Coordination Problem**.
+> 2.  **Lack of Correlating device:** Robert's "Traffic Light" idea requires agents to coordinate their actions based on the `lake_flooded` state without a reward bias. Since neither agent is forced by the environment to wait, they frequently both attempt to cross, leading to high collision rates.
+> 3.  **Non-Stationarity:** Each independent learner updates its policy based on the other agent's behavior. In a symmetric game, this leads to oscillating policies where agents "chase" each other's updates without converging to a stable joint policy.
+> **References:**
+> - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Non-stationarity in independent learners, Slide 8).
+> - `FIT5226_W07_Classical_Game _Theory.pdf` (Symmetric games and coordination failures, Slide 25).
+
+**Math Explanation:**
+> In Phase 2, the game at the intersection $(2,2)$ collapses into a **Symmetric Hawk-Dove Game**. The payoff matrix $A$ becomes identical for both players:
+> $$ R_A(s, cross, cross) = R_B(s, cross, cross) = -25 $$
+> $$ R_A(s, cross, wait) = R_B(s, wait, cross) = -5 $$
+> $$ R_A(s, wait, cross) = R_B(s, cross, wait) = -3 $$
+> 1.  **Nash Equilibrium:** There are two pure-strategy Nash Equilibria: $(Cross, Wait)$ and $(Wait, Cross)$. However, because the game is symmetric and agents are independent, they cannot distinguish who should play which role.
+> 2.  **Coordination Failure:** Without an **Environmental Correlating Device** (like the hazard penalty in Phase 1), agents lack a mechanism for **Equilibrium Selection**. The probability of converging to a stable "Traffic Light" equilibrium via independent Q-learning is mathematically low due to the symmetric nature of the state-action value updates.
+> **References:**
+> - `FIT5226_W07_Classical_Game _Theory.pdf` (Hawk-Dove game matrix analysis, Slide 25).
+> - `FIT5226_W07_Lab7_Solutions_Wolfram.pdf` (Normal form game solutions).
 
 
 
@@ -175,6 +220,8 @@ class StateHandler:
 
 **Technical Explanation:**
 > To comply with the *partial observability* requirement, the `StateHandler` filters the global environment observation. Each agent only receives its own (y, x) coordinates, its payload status, and the global lake state. The other agent's position is explicitly excluded to ensure decentralized learning. The resulting tuple is used as a hashable key for the tabular Q-table.
+> **References:**
+> - `FIT5226_W03_Seminar_1_RL_Introduction.pdf` (Partial observability in RL).
 
 ##3Task 1:
 
@@ -199,6 +246,8 @@ def step(self, joint_action):
 
 **Technical Explanation:**
 > The environment resolves movements in a *simultaneous lock-step* fashion. Instead of updating agents sequentially (which would give the second agent an unfair informational advantage), the `step` function captures the `prev_positions`, calculates all `new_positions` independently, and then commits them. Collisions are then checked based on these finalized resulting coordinates.
+> **References:**
+> - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Multi-agent simultaneous execution).
 
 The state of the lake is updated in-between successive time steps according to a probability p that determines the probability of it changing its state from dry to flooded (or vice versa) at this moment.
 
@@ -211,6 +260,8 @@ if random.random() < self.config.p_flood:
 
 **Technical Explanation:**
 > Stochastic transitions are handled before movement resolution in the `step` loop. This ensures that the rewards calculated (e.g., water hazard penalty) reflect the state of the environment *during* the action execution.
+> **References:**
+> - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Stochastic state transitions).
 
 Your risk-assessment engineers advise that the following rewards adequately reflect the cost and likelihood of damage. You may modify these but they provide a good starting point: 
 
@@ -231,6 +282,8 @@ Of course, these scale with the other rewards and the above is valid for sample-
 
 **Technical Explanation:**
 > Hyperparameters and reward values are externalized into JSON configuration files. This allows for *modular experimentation* (required for the HD grade) without modifying core algorithmic code. The `hazard_penalty` is set to `-20.0` for Phase 1 and `0.0` for Phase 2.
+> **References:**
+> - `FIT5226_W04_Seminar_SARSA_And_Q_Learning.pdf` (Reward shaping and learning dynamics).
 
 ***Hints:***
 
@@ -251,6 +304,9 @@ def update_learning(self, state, action, reward, next_obs_state, terminal):
 
 **Technical Explanation:**
 > Sarah's update is a *Model-Aware Expected Value Bellman Update*. Instead of a standard TD-target using only the observed next state, we use the known transition probability $p$ to weight the maximum future Q-values of both possible next states (lake flooded vs dry). This stabilizes the Q-values in a highly stochastic environment.
+> **References:**
+> - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Expectation backups in stochastic RL).
+> - `FIT5226_W03_Seminar_2_MDPs_Bellman_Policy_And_Value_Iteration.pdf` (Bellman Expectation Equation, Slide 15).
 
 **Math Explanation:**
 > Sarah's algorithm is a variation of **Full-Backup Q-Learning**. While standard Q-learning samples a single next state $s' \sim P(s'|s,a)$, Sarah's update analytically computes the expectation over the known transition model of the lake:
@@ -258,6 +314,8 @@ def update_learning(self, state, action, reward, next_obs_state, terminal):
 > In our specific case, with binary lake states $L \in \{dry, flooded\}$ and transition probability $p$:
 > $$ \mathbb{E}[V(s')] = (1-p) \cdot \max_{a'} Q(s'_{dry}, a') + p \cdot \max_{a'} Q(s'_{flooded}, a') $$
 > This reduction in **Target Variance** significantly accelerates convergence in stochastic environments by smoothing out the noise from exogenous state flips.
+> **References:**
+> - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Full backup formula).
 
 5. You are allowed to split the simulation into multiple learning phases instead of just a single integrated simulation in which both types learn in parallel. However, you may only do so if you can provide a sound argument why this is equivalent to letting them learn in an integrated way and on-the-job.
 6. Please read the section about generative AI use at the end of this document very carefully. While you are allowed and even encouraged to use AI for coding and learning purposes, you must be able to explain the submitted product completely yourself. This applies to all tasks.
@@ -285,6 +343,10 @@ def replicator_dynamics(x, t):
 
 **Technical Explanation:**
 > The intersection conflict is abstracted into a *Symmetric Normal-Form Game*. We define a payoff matrix based on the environment's rewards (Collision vs Delay). Using `scipy.integrate.odeint`, we numerically solve the Replicator Dynamics ODE to demonstrate that "Cross" is not an Evolutionarily Stable Strategy (ESS) in the symmetric Phase 2.
+> **References:**
+> - `FIT5226_Q08_Lecture8_Population_Games_Evolution_Game_Theory.pdf` (Replicator Equation and population fitness).
+> - `FIT5226_Q09_Lab9_Solution_Jupyter.ipynb` (Numerical simulation of replicator dynamics).
+> - `FIT5226_W03_Lab_ODE_Example_Solving_In_Python.ipynb` (ODE integration with `scipy`).
 
 **Math Explanation:**
 > We model the intersection as a symmetric 2x2 game with strategies $C$ (Cross) and $W$ (Wait). The **Replicator Equation** governs the evolution of the population proportion $x$ playing strategy $C$:
@@ -297,6 +359,8 @@ def replicator_dynamics(x, t):
 > - $U(W, C) = -3$ (Wait only)
 > - $U(W, W) = -3$ (Mutual Wait)
 > Since $U(W, C) > U(C, C)$, the 'Cross' strategy is unstable against 'Wait' mutants when the population is mostly 'Crossers'. The simulation tracks the convergence toward the stable Nash Equilibrium.
+> **References:**
+> - `FIT5226_Q08_Lecture8_Population_Games_Evolution_Game_Theory.pdf` (ESS definition and matrix game formulation, Slide 22).
 
 ### Task 4 (max 150 words)
 
@@ -311,7 +375,10 @@ of the water penalty creates a perfectly symmetric game."
 ```
 
 **Technical Explanation:**
-This section provides the *theoretical synthesis*. It explains that the water hazard in Phase 1 acts as an *environmental correlating device*, breaking the symmetry between agents and facilitating coordination. In Phase 2, the lack of such a device leads to non-stationarity and coordination failure.
+> This section provides the *theoretical synthesis*. It explains that the water hazard in Phase 1 acts as an *environmental correlating device*, breaking the symmetry between agents and facilitating coordination. In Phase 2, the lack of such a device leads to non-stationarity and coordination failure.
+> **References:**
+> - `FIT5226_Q09_Overview.pdf` (Synthesis of RL and Game Theory).
+> - `FIT5226_W07_Overview.pdf` (Coordination in multi-agent environments).
 
  
 
@@ -371,7 +438,3 @@ The difference between the hardness of the problems for RL is explained with arg
 Theoretical explanations must be correct but only need to be given conceptually in broad sketch terms, i.e. they may but do not have to contain detailed mathematical working out. 
 
 Don’t let Robert win! Ideally, you have found a way to outsmart Robert, maybe with Sarah’s help, but this is not a part of the requirements for a HD.
-
-
-
-
