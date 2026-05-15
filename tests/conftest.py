@@ -1,16 +1,18 @@
 import pytest
 from src.core.config import AgentConfig, EnvConfig, ExperimentConfig
 
+
 @pytest.fixture
 def default_agent_config():
     return AgentConfig(
         learning_rate_alpha=0.1,
-        discount_factor_gamma=0.9,
+        discount_factor_gamma=0.99,
         initial_epsilon=1.0,
         epsilon_decay_rate=0.99,
         minimum_epsilon=0.01,
         action_size=5
     )
+
 
 @pytest.fixture
 def default_env_config():
@@ -25,6 +27,7 @@ def default_env_config():
         collision_penalty=-20.0,
         hazard_penalty=-20.0
     )
+
 
 @pytest.fixture
 def default_experiment_config(default_agent_config, default_env_config):

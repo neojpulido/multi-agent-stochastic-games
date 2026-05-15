@@ -11,7 +11,7 @@ class AgentConfig:
     initial_epsilon: float
     epsilon_decay_rate: float
     minimum_epsilon: float
-    action_size: int  # 5 for Stage 2 (N, S, E, W, WAIT)
+    action_size: int
 
 
 @dataclass(frozen=True)
@@ -19,10 +19,10 @@ class EnvConfig:
     """Structural parameters and reward values for the Rugged Planet MARL GridWorld."""
     grid_rows: int
     grid_cols: int
-    p_flood: float  # Probability of lake flooding (Stochasticity)
+    p_flood: float
     step_cost: float
-    wait_cost: float        # Required field
-    pickup_reward: float    # Required field
+    wait_cost: float       # required — was missing in original
+    pickup_reward: float   # required — was missing in original
     success_reward: float
     collision_penalty: float = 0.0
     hazard_penalty: float = 0.0
@@ -30,7 +30,7 @@ class EnvConfig:
 
 @dataclass(frozen=True)
 class ExperimentConfig:
-    """The root configuration object for a specific simulation run."""
+    """Root configuration object for a simulation run."""
     experiment_name: str
     is_multi_agent: bool
     training_episode_budget: int
@@ -39,13 +39,8 @@ class ExperimentConfig:
 
     @classmethod
     def from_json(cls, file_path: str) -> 'ExperimentConfig':
-        """
-        Loads an experiment configuration from a JSON file.
-        This allows for the 'Configuration-Driven Development' pattern.
-        """
         with open(file_path, 'r') as f:
             data = json.load(f)
-
         return cls(
             experiment_name=data.get("experiment_name", "Unnamed_Experiment"),
             is_multi_agent=data.get("is_multi_agent", False),
@@ -54,7 +49,12 @@ class ExperimentConfig:
             env=EnvConfig(**data["env"])
         )
 
-    def save(self, file_path: str):
-        """Saves current configuration to a JSON for reproducibility."""
-        # Implementation for saving back to disk if needed
-        pass
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ExperimentConfig':
+        return cls(
+            experiment_name=data.get("experiment_name", "Unnamed_Experiment"),
+            is_multi_agent=data.get("is_multi_agent", True),
+            training_episode_budget=data["training_episode_budget"],
+            agent=AgentConfig(**data["agent"]),
+            env=EnvConfig(**data["env"])
+        )
