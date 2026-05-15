@@ -1,12 +1,12 @@
 {
-    "experiment_name": "Stage2_Phase1_Sarah_Safe",
+    "experiment_name": "Phase1_Sarah_Safe",
     "is_multi_agent": true,
-    "training_episode_budget": 5000,
+    "training_episode_budget": 8000,
     "agent": {
         "learning_rate_alpha": 0.1,
-        "discount_factor_gamma": 0.9,
+        "discount_factor_gamma": 0.95,
         "initial_epsilon": 1.0,
-        "epsilon_decay_rate": 0.999,
+        "epsilon_decay_rate": 0.9995,
         "minimum_epsilon": 0.01,
         "action_size": 5
     },

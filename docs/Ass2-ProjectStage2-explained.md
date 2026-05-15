@@ -14,6 +14,14 @@ This project constitutes your entire in-semester assessment for the unit.
 Stage 2 (the current Phase) concerns Multi-agent coordination. 
 
 ## Scenario for Stage 2
+
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | **Y** 🚀 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+| :---: | :---: | :---: | :---: | :---: |
+| &nbsp; | &nbsp; | ↕️ | &nbsp; | &nbsp; |
+| **X** 🚀 | ↔️ | 🌊 | ↔️ | **U** 🦠 |
+| &nbsp; | &nbsp; | ↕️ | &nbsp; | &nbsp; |
+| &nbsp; | &nbsp; | **V** 🦠 | &nbsp; | &nbsp; |
+
 You will write code for multiple agents of two different types to perform q-learning for a coordination task in a small grid world. The emphasis in this assignment is not on the coding itself—this should be straightforward after Stage 1. The emphasis is not even on successfully learning all aspects of all tasks. Your agents may or may not be able to learn the more advanced aspects of the scenario but this is not what determines success in this assignment. ***The emphasis is on understanding how RL behaves in this scenario and what makes one variant of the problem harder than the other one. For a high level of achievement we expect you to systematically use structured experimentation to find the answer to this and/or to be able to explain this in a theoretically grounded framework***.
 
 Here is the scenario. Read it carefully, the details are important!
@@ -54,11 +62,12 @@ for agent_id in ["Agent_A", "Agent_B"]:
 > The implementation operationalizes the mission plan as a **Stochastic Transport Task** with the following engineering constraints:
 > 1.  **Heterogeneous Topology:** The environment distinguishes between `Agent_A` and `Agent_B` objectives. By mapping spaceship $X$ to target $U$ and $Y$ to $V$, the simulation creates two orthogonal task axes that intersect at the lake $(2,2)$.
 > 2.  **State-Driven Logistics:** Mission progress is tracked via a `has_sample` state variable. This enforces a strictly sequential task dependency: Search $\rightarrow$ Sampling $\rightarrow$ Return $\rightarrow$ Delivery.
-> 3.  **Incentive Alignment:** Agents are not given explicit goal coordinates; instead, the environment provides sparse positive reward signals (10 for sampling, 50 for delivery). The Q-learning algorithm must discover the landmark locations by maximizing these signals.
+> 3.  **Incentive Alignment:** Agents are not given explicit goal coordinates; instead, the environment provides sparse positive reward signals (10 for sampling, 50 for delivery). The Q-learning algorithm must discover the landmark locations by maximizing these signals. 
 > 4.  **Terminal Reward Coupling:** The 'delivery' reward is only accessible if the agent is in the 'return' state (`has_sample=True`), ensuring that agents learn to complete the entire transport cycle rather than just reaching the sampling site.
 > **References:** 
 > - `FIT5226_W06_GridWorld_v4.py` (Board architecture and piece positioning).
 > - `FIT5226_W06_Stage1_Solution.ipynb` (Sequential search and pickup state logic).
+> - `FIT5226_W06_Stage2_SolutionV4.ipynb` (Multi-agent coordinate handling and pickup logic).
 
 **Math Explanation:**
 > The environment is a discrete grid $G = \{0, \dots, 4\} \times \{0, \dots, 4\}$. The shortest path distance between any two points $p_1, p_2 \in G$ is defined by the **Manhattan Distance**:
@@ -69,6 +78,8 @@ for agent_id in ["Agent_A", "Agent_B"]:
 > - Intersection: $Path_A \cap Path_B = \{(2, 2)\}$
 > **References:**
 > - `FIT5226_W03_Seminar_2_MDPs_Bellman_Policy_And_Value_Iteration.pdf` (MDP grid world formulation, Slide 12).
+> - `FIT5226_W06_Stage1_Solution.ipynb` (Grid coordinate distance logic).
+> - `FIT5226_W06_GridWorld_v4.py` (Coordinate system and bounds checking).
 
 We don’t know much about the planet except (1) that the terrain is dangerous and movement is extremely difficult, so that it is important that all routes have to be kept as short as possible; (2) there is a mysterious playa lake (an ephemeral lake) at the point where the shortest connections between X and U and Y and V, respectively, intersect. This lake floods and dries out at surprisingly high speed (but this may not be so strange given that this is a very strange planet anyway). 
 
@@ -98,6 +109,7 @@ self.locs["Lake"] = (2, 2)
 > 3.  **Conflict Geometry:** The lake is strategically placed at the intersection of the agents' orthogonal shortest paths. This forces the agents to solve an **Anti-Coordination Game** to avoid collisions while pursuing their primary mission objectives.
 > **References:**
 > - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Stochastic games / Markov games, Slide 5).
+> - `FIT5226_Q09_Lab9_Solution_Jupyter.ipynb` (Stochastic state transition simulation in carpark problem).
 
 **Math Explanation:**
 > 1.  **Expected Step Reward:** The RL agent seeks to maximize $G_t = \sum \gamma^k r_{t+k+1}$. With $r_{step} = -5$, any deviation from the geodesic path incurs a penalty of at least $-5$ per extra step.
@@ -106,6 +118,7 @@ self.locs["Lake"] = (2, 2)
 > where $p$ is the transition probability. The global state transition is thus $P(s' | s, a) = P(s'_{agents} | s_{agents}, a) \cdot T(s'_{lake} | s_{lake})$.
 > **References:**
 > - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Transition probability matrices).
+> - `FIT5226_Q09_Lab9_Solution_Jupyter.ipynb` (Markovian state transition logic).
 
 As the head of the engineering department, you decide to build swarms of tiny robots, so that an almost continuous stream of robots can run between each ship and its target sampling location. 
 
@@ -141,23 +154,27 @@ if self.positions["Agent_A"] == self.positions["Agent_B"]:
 > 4.  **Collision Physics:** Regardless of waterproofing, both agents suffer a `collision_penalty` if they occupy the same coordinate. This reinforces the need for coordination even when environmental hazards are absent for one player.
 > **References:**
 > - `FIT5226_W07_Classical_Game _Theory.pdf` (Equilibrium selection via asymmetry, Slide 22).
+> - `FIT5226_W07_Lab7_Solutions_Wolfram.pdf` (Asymmetric payoff matrix analysis).
+> - `FIT5226_W07_Lab7_Solutions_Notebook.txt` (Wolfram solution for coordination in asymmetric games).
 
 **Math Explanation:**
 > In Phase 1, the Reward Functions $R_A$ and $R_B$ are asymmetric at $s = (2,2)$:
 > $$ R_A(s, flooded, a) = r_{step} + r_{hazard} \cdot \mathbb{1}(flooded) $$
 > $$ R_B(s, flooded, a) = r_{step} $$
 > This asymmetry creates a **Correlated Equilibrium** where the lake state $flooded$ serves as a public signal $\nu$. Since $E[R_A | flooded, cross] \ll E[R_A | flooded, wait]$, Agent A's optimal policy $\pi_A$ converges to $wait$. This allows Agent B to safely select $cross$, resolving the anti-coordination problem.
-
+> **References:**
+> - `FIT5226_W07_Lab7_Solutions_Wolfram.pdf` (Equilibrium derivations for uncorrelated agents).
+> - `FIT5226_W07_Lab7_Solutions_Notebook.txt` (Numerical solution verification).
 
 ### Phase 2
  
-Realising that he won’t succeed in sabotaging your project because of Sarah’s skills, Robert changes tack and advises that the space agency doesn’t fully trust her method. In an attempt to appear genuine, he now allows you to fully waterproof all robots of both types. Since there is no danger of water damage anymore, Robert decrees that the robots must no longer be penalised for entering the flooded lake so that they can figure out the optimal behaviour. However, the collision danger in the lake remains.
+Realising that he won’t succeed in sabotaging your project because of Sarah’s skills, Robert changes tack and advises that the space agency doesn’t fully trust her method. In an attempt to appear genuine, he now allows you to ***fully waterproof all robots of both types***. Since there is no danger of water damage anymore, Robert decrees that the robots must ***no longer be penalised*** for entering the flooded lake so that ***they can figure out the optimal behaviour***. However, the ***collision danger in the lake remains***.
 
-Robert declares that your reinforcement learning should still be able to avoid collisions by learning that one kind of robot should only cross when the lake is dry and the other kind should only cross when the lake is flooded. In some sense they should learn to use the lake as a traffic light. For reasons that remain unclear, you are not allowed to program their behaviour explicitly in this way but they have to learn this on the job. 
+Robert declares that your ***reinforcement learning should still be able to avoid collisions*** by learning that ***one kind of robot should only cross when the lake is dry*** and the ***other kind should only cross when the lake is flooded***. In some sense they should learn to use the lake as a traffic light. For reasons that remain unclear, you are not allowed to program their behaviour explicitly in this way but ***they have to learn this on the job***. 
 
-Robert cunningly argues that this should indeed be quite simple since, as he says, “using the lake like a traffic light is just a different equilibrium of the collective behaviour so they should learn this.” 
+Robert cunningly argues that this should indeed be quite simple since, as he says, “using the lake like a traffic light is just a ***different equilibrium of the collective behaviour so they should learn this***.” 
 
-Sarah warns you that this will be extremely difficult to achieve using q-learning and that she has serious doubts the project will succeed under these conditions.
+Sarah warns you that this will be **extremely difficult to achieve using q-learning** and that she has serious doubts the project will succeed under these conditions.
 
 **Implementation Mapping:**
 ```python
@@ -182,6 +199,8 @@ if self.positions["Agent_A"] == self.positions["Agent_B"]:
 > **References:**
 > - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Non-stationarity in independent learners, Slide 8).
 > - `FIT5226_W07_Classical_Game _Theory.pdf` (Symmetric games and coordination failures, Slide 25).
+> - `FIT5226_W07_Lab7_Solutions_Wolfram.pdf` (Symmetric game equilibrium analysis).
+> - `FIT5226_W07_Lab7_Solutions_Notebook.txt` (Numerical analysis of coordination failure in symmetric matrix games).
 
 **Math Explanation:**
 > In Phase 2, the game at the intersection $(2,2)$ collapses into a **Symmetric Hawk-Dove Game**. The payoff matrix $A$ becomes identical for both players:
@@ -193,6 +212,7 @@ if self.positions["Agent_A"] == self.positions["Agent_B"]:
 > **References:**
 > - `FIT5226_W07_Classical_Game _Theory.pdf` (Hawk-Dove game matrix analysis, Slide 25).
 > - `FIT5226_W07_Lab7_Solutions_Wolfram.pdf` (Normal form game solutions).
+> - `FIT5226_W07_Lab7_Solutions_Notebook.txt` (Symmetric matrix game convergence challenges).
 
 
 
@@ -202,28 +222,65 @@ Note that you don’t have to address all tasks listed below for this assignment
 
 As the head of engineering, it is your responsibility to figure out how the project can be conducted successfully. Is Sarah right? Can you outsmart Robert?
 
-You decide to build a small simulation to support your decision making. You set up a 5x5 grid-world as in the diagram and populate it with the two agent types, A and B. Both types have the same five actions that they can execute, namely to step to any neighboring field in the four cardinal directions (north, south, east, west) or to wait in the current position without moving. Type A starts at X and when it reaches location U it automatically picks up a sample. When it has returned to X it automatically discharges the sample. At this point, it has completed its task. Likewise, type B, deployed from Y, automatically picks up a sample when it reaches V and automatically discharges the sample when it returns to Y. No specific action is required from a robot for picking up or dropping an item, it only needs to step into the corresponding location. 
+You decide to ***build a small simulation to support your decision making***. You set up a **5x5 grid-world** as in the diagram and ***populate*** it with the ***two agent types, A and B***. Both types have the ***same five actions that they can execute***, namely to step to any neighboring field in the four cardinal directions (north, south, east, west) or to wait in the current position without moving. Type A starts at X and when it reaches location U it automatically picks up a sample. When it has returned to X it automatically discharges the sample. At this point, it has completed its task. Likewise, type B, deployed from Y, automatically picks up a sample when it reaches V and automatically discharges the sample when it returns to Y. No specific action is required from a robot for picking up or dropping an item, it only needs to step into the corresponding location. 
 
 The task each robot has to learn is to find the shortest way to their designated sampling location and to avoid collisions and water damage. Each robot can observe its own location, whether it carries a sample, and the binary state of the lake (dry/flooded) but not the other agents’ locations. 
 
 **Implementation Mapping:**
 ```python
+# src/domain/gridworld/stochastic.py
+
+# 1. 5x5 Grid and Action Space (N, S, E, W, Wait)
+self.grid_size = 5
+self.action_space = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST, Directions.WAIT]
+
+# 2. Automatic Pickup and Discharge Logic
+def _handle_task_logic(self, agent_id, pos):
+    if agent_id == "Agent_A":
+        # Pickup at U, Discharge at X
+        if not self.has_sample[agent_id] and pos == self.locs["U"]:
+            self.has_sample[agent_id] = True; rewards[agent_id] += 10.0
+        elif self.has_sample[agent_id] and pos == self.locs["X"]:
+            self.done[agent_id] = True; rewards[agent_id] += 50.0
+    elif agent_id == "Agent_B":
+        # Pickup at V, Discharge at Y
+        if not self.has_sample[agent_id] and pos == self.locs["V"]:
+            self.has_sample[agent_id] = True; rewards[agent_id] += 10.0
+        elif self.has_sample[agent_id] and pos == self.locs["Y"]:
+            self.done[agent_id] = True; rewards[agent_id] += 50.0
+
+# 3. Partial Observability (StateHandler filters peer data)
 # src/core/state.py
-class StateHandler:
-    @staticmethod
-    def get_agent_state(agent_id, observation):
-        pos = observation["positions"][agent_id]
-        has_sample = observation["has_sample"][agent_id]
-        lake_flooded = observation["lake_flooded"]
-        return (pos[0], pos[1], has_sample, lake_flooded)
+def get_agent_state(agent_id, observation):
+    return (
+        observation["positions"][agent_id],  # Own position
+        observation["has_sample"][agent_id], # Own payload
+        observation["lake_flooded"]           # Global signal
+    )
 ```
 
 **Technical Explanation:**
-> To comply with the *partial observability* requirement, the `StateHandler` filters the global environment observation. Each agent only receives its own (y, x) coordinates, its payload status, and the global lake state. The other agent's position is explicitly excluded to ensure decentralized learning. The resulting tuple is used as a hashable key for the tabular Q-table.
+> The simulation environment is operationalized as a **Decentralized Partially Observable Markov Decision Process (Dec-POMDP)**. 
+> 1. **Action Grammar:** Each agent uses a cardinal action space $|A|=5$. The `WAIT` action is critical; it allows agents to yield the lake intersection $(2,2)$ without losing their current positional progress on their primary axis.
+> 2. **Proximity-Triggered Transitions:** Pickups and deliveries are implemented as **State Transitions triggered by Positional Predicates**. By automating these transitions upon entering landmark coordinates, we reduce the complexity of the action space and eliminate the need for a discrete "interact" action.
+> 3. **Independent Learning Architecture:** By enforcing partial observability (explicitly omitting the peer agent's coordinates), agents are forced to learn **Individual Policies** $\pi_i(a_i | s_{local, i})$. The presence of the other agent is thus perceived as non-stationarity in the environment's transition dynamics, consistent with Robert's Phase 2 challenge.
 > **References:**
-> - `FIT5226_W03_Seminar_1_RL_Introduction.pdf` (Partial observability in RL).
+> - `FIT5226_W06_GridWorld_v4.py` (Base class for grid world dynamics and action resolution).
+> - `FIT5226_W06_Stage2_SolutionV4.ipynb` (Automatic pickup/delivery logic implementation).
+> - `FIT5226_W06_Stage2_SkeletonV3_APIUse.ipynb` (API structure for local observations).
 
-##3Task 1:
+**Math Explanation:**
+> 1. **Local State Space Cardinality:** The tabular Q-agent learns over a local state space $S_{local}$ consisting of its position $(y, x)$, payload status $H$, and lake state $L$:
+>    $$ |S_{local}| = (\text{width} \times \text{height}) \times |H| \times |L| = (5 \times 5) \times 2 \times 2 = 100 \text{ states} $$
+>    This reduction (from a joint state space of $5000+$ states) is essential for tabular convergence within the requested training limits.
+> 2. **Navigation Geodesics:** Optimal navigation is defined by **Taxicab Geometry**. For Agent A (X to U), the shortest path is:
+>    $$ L_1((2,0), (2,4)) = |2-2| + |4-0| = 4 \text{ steps} $$
+>    A complete mission cycle (X $\rightarrow$ U $\rightarrow$ X) requires a minimum of 8 steps, setting the theoretical upper bound for the optimal cumulative reward (excluding sampling/delivery bonuses) at $8 \times -5 = -40$.
+> **References:**
+> - `FIT5226_W06_Stage1_Solution.ipynb` (State space counting and Manhattan distance applications).
+> - `FIT5226_W07_Lab7_Solutions_Notebook.txt` (Analysis of state representation and hashable keys in multi-agent grids).
+
+## Task 1:
 
 Sarah’s theory about Phase 1 is correct. The robots can learn that Type A should only cross when the lake is dry and Type B consequently should only enter the lake when it is flooded so that the crossing is guaranteed to be collision-free  (as there will be no Type A in the lake at that time). 
 
@@ -248,6 +305,8 @@ def step(self, joint_action):
 > The environment resolves movements in a *simultaneous lock-step* fashion. Instead of updating agents sequentially (which would give the second agent an unfair informational advantage), the `step` function captures the `prev_positions`, calculates all `new_positions` independently, and then commits them. Collisions are then checked based on these finalized resulting coordinates.
 > **References:**
 > - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Multi-agent simultaneous execution).
+> - `FIT5226_W06_Stage2_SolutionV4.ipynb` (Simultaneous step update logic).
+> - `FIT5226_W06_GridWorld_v4.py` (Grid movement validation logic).
 
 The state of the lake is updated in-between successive time steps according to a probability p that determines the probability of it changing its state from dry to flooded (or vice versa) at this moment.
 
@@ -262,6 +321,7 @@ if random.random() < self.config.p_flood:
 > Stochastic transitions are handled before movement resolution in the `step` loop. This ensures that the rewards calculated (e.g., water hazard penalty) reflect the state of the environment *during* the action execution.
 > **References:**
 > - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Stochastic state transitions).
+> - `FIT5226_Q09_Lab9_Solution_Jupyter.ipynb` (Stochastic update mechanism and simulation loop).
 
 Your risk-assessment engineers advise that the following rewards adequately reflect the cost and likelihood of damage. You may modify these but they provide a good starting point: 
 
@@ -284,6 +344,7 @@ Of course, these scale with the other rewards and the above is valid for sample-
 > Hyperparameters and reward values are externalized into JSON configuration files. This allows for *modular experimentation* (required for the HD grade) without modifying core algorithmic code. The `hazard_penalty` is set to `-20.0` for Phase 1 and `0.0` for Phase 2.
 > **References:**
 > - `FIT5226_W04_Seminar_SARSA_And_Q_Learning.pdf` (Reward shaping and learning dynamics).
+> - `FIT5226_W04_Lab4_Solutions.pdf` (Impact of penalty magnitude on path convergence and exploration).
 
 ***Hints:***
 
@@ -307,6 +368,8 @@ def update_learning(self, state, action, reward, next_obs_state, terminal):
 > **References:**
 > - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Expectation backups in stochastic RL).
 > - `FIT5226_W03_Seminar_2_MDPs_Bellman_Policy_And_Value_Iteration.pdf` (Bellman Expectation Equation, Slide 15).
+> - `FIT5226_W04_Lab4_Solutions.pdf" (Standard Q-learning update vs expectation methods).
+> - `FIT5226_W06_Stage1_Solution.ipynb` (Tabular Q-update implementation reference).
 
 **Math Explanation:**
 > Sarah's algorithm is a variation of **Full-Backup Q-Learning**. While standard Q-learning samples a single next state $s' \sim P(s'|s,a)$, Sarah's update analytically computes the expectation over the known transition model of the lake:
@@ -316,6 +379,7 @@ def update_learning(self, state, action, reward, next_obs_state, terminal):
 > This reduction in **Target Variance** significantly accelerates convergence in stochastic environments by smoothing out the noise from exogenous state flips.
 > **References:**
 > - `FIT5226_Q09_Lecture9_MinMax_QLearning.pdf` (Full backup formula).
+> - `FIT5226_W04_Lab4_Solutions.pdf` (Mathematical grounding for temporal difference errors).
 
 5. You are allowed to split the simulation into multiple learning phases instead of just a single integrated simulation in which both types learn in parallel. However, you may only do so if you can provide a sound argument why this is equivalent to letting them learn in an integrated way and on-the-job.
 6. Please read the section about generative AI use at the end of this document very carefully. While you are allowed and even encouraged to use AI for coding and learning purposes, you must be able to explain the submitted product completely yourself. This applies to all tasks.
@@ -346,7 +410,9 @@ def replicator_dynamics(x, t):
 > **References:**
 > - `FIT5226_Q08_Lecture8_Population_Games_Evolution_Game_Theory.pdf` (Replicator Equation and population fitness).
 > - `FIT5226_Q09_Lab9_Solution_Jupyter.ipynb` (Numerical simulation of replicator dynamics).
-> - `FIT5226_W03_Lab_ODE_Example_Solving_In_Python.ipynb` (ODE integration with `scipy`).
+> - `FIT5226_W03_Lab_ODE_Example_Solving_In_Python.ipynb` (ODE integration with `scipy` implementation).
+> - `FIT5226_Q09_Lab9_Solution_Wolfram.nb` (Wolfram implementation of replicator dynamics).
+> - `FIT5226_Q09_PD_Replicator.ipynb` (Jupyter notebook for Prisoner's Dilemma replicator variant).
 
 **Math Explanation:**
 > We model the intersection as a symmetric 2x2 game with strategies $C$ (Cross) and $W$ (Wait). The **Replicator Equation** governs the evolution of the population proportion $x$ playing strategy $C$:
@@ -361,6 +427,8 @@ def replicator_dynamics(x, t):
 > Since $U(W, C) > U(C, C)$, the 'Cross' strategy is unstable against 'Wait' mutants when the population is mostly 'Crossers'. The simulation tracks the convergence toward the stable Nash Equilibrium.
 > **References:**
 > - `FIT5226_Q08_Lecture8_Population_Games_Evolution_Game_Theory.pdf` (ESS definition and matrix game formulation, Slide 22).
+> - `FIT5226_Q08_Lab8_Solutions.pdf` (Mathematical derivation of Replicator Dynamics ESS stability conditions).
+> - `FIT5226_Q09_Lab9_Solution.pdf` (Payoff mapping for multi-player games).
 
 ### Task 4 (max 150 words)
 
@@ -379,6 +447,7 @@ of the water penalty creates a perfectly symmetric game."
 > **References:**
 > - `FIT5226_Q09_Overview.pdf` (Synthesis of RL and Game Theory).
 > - `FIT5226_W07_Overview.pdf` (Coordination in multi-agent environments).
+> - `FIT5226_Q08_Lab8_Solutions.pdf` (Conceptual links between EGT stability and RL convergence behavior).
 
  
 

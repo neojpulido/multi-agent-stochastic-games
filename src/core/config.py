@@ -21,6 +21,8 @@ class EnvConfig:
     grid_cols: int
     p_flood: float  # Probability of lake flooding (Stochasticity)
     step_cost: float
+    wait_cost: float
+    pickup_reward: float
     success_reward: float
     collision_penalty: float = 0.0
     hazard_penalty: float = 0.0

@@ -2,12 +2,12 @@ import numpy as np
 from src.agents.tabular_qagent import TabularQAgent
 
 def test_agent_initialization(default_agent_config):
-    agent = TabularQAgent(agent_id="TestAgent", config=default_agent_config)
+    agent = TabularQAgent(agent_id="TestAgent", config=default_agent_config, p_flood=0.1)
     assert agent.config.action_size == 5
     assert agent.epsilon == 1.0
 
 def test_choose_action_greedy(default_agent_config):
-    agent = TabularQAgent(agent_id="TestAgent", config=default_agent_config)
+    agent = TabularQAgent(agent_id="TestAgent", config=default_agent_config, p_flood=0.1)
     state = (2, 2, False, False) # pos_x, pos_y, has_sample, lake_flooded
     # Set a specific Q-value
     agent.q_table[state][3] = 10.0
@@ -18,13 +18,13 @@ def test_choose_action_greedy(default_agent_config):
     assert action == 3
 
 def test_agent_learn_step(default_agent_config):
-    agent = TabularQAgent(agent_id="TestAgent", config=default_agent_config)
+    agent = TabularQAgent(agent_id="TestAgent", config=default_agent_config, p_flood=0.0) # p_flood = 0.0 makes it predictable
     previous_state = (0, 0, False, False)
     current_state = (0, 1, False, False)
     action = 1
     reward = 10.0
     
-    # Setup controlled Q-values for the future state
+    # Setup controlled Q-values for the future states (both unchanged and flipped, but p_flood=0 means only unchanged matters)
     agent.q_table[current_state][3] = 5.0
     
     alpha = agent.config.learning_rate_alpha  # 0.1

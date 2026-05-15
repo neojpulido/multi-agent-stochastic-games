@@ -1,0 +1,5 @@
+# Task 4 Theoretical Justification
+
+In Phase 1, the water hazard naturally imposes an asymmetric game, breaking the symmetry between agents A and B. This inherent asymmetry acts as an environmental correlating device, facilitating clear equilibrium selection (Agent B crosses while Agent A waits), leading to rapid convergence. 
+
+However, in Phase 2, the removal of the water penalty creates a perfectly symmetric game. Without an external correlating device (such as a traffic light) to coordinate joint actions, agents lack a mechanism for equilibrium selection. They face an anti-coordination problem at the intersection, continuously updating their policies based on the shifting behavior of the other agent. This mutual adaptation creates severe non-stationarity in the environment from the perspective of each independent tabular Q-learner. As a result, standard independent MARL struggles to converge, often oscillating between catastrophic collisions and sub-optimal mutual waiting.

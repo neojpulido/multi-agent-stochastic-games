@@ -8,7 +8,7 @@ def test_training_convergence(default_experiment_config):
     
     agent_ids = ["Agent_A", "Agent_B"]
     agents = {
-        aid: TabularQAgent(agent_id=aid, config=default_experiment_config.agent) 
+        aid: TabularQAgent(agent_id=aid, config=default_experiment_config.agent, p_flood=default_experiment_config.env.p_flood) 
         for aid in agent_ids
     }
 
