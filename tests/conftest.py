@@ -19,6 +19,8 @@ def default_env_config():
         grid_cols=5,
         p_flood=0.1,
         step_cost=-5.0,
+        wait_cost=-3.0,
+        pickup_reward=10.0,
         success_reward=50.0,
         collision_penalty=-20.0,
         hazard_penalty=-20.0
