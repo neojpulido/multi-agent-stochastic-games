@@ -1,4 +1,4 @@
 .idea/
-#sources/*
+sources/*
 **/__pycache__/*
 .DS_Store
